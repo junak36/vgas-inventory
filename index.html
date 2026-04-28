@@ -1,0 +1,360 @@
+<!doctype html>
+<html lang="bg">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Инвентаризация складове | V-GAS</title>
+  <style>
+    :root{
+      --bg:#f6f7f9;--card:#fff;--ink:#172033;--muted:#64748b;--line:#d9e0ea;
+      --brand:#0f766e;--brand2:#e6f4f1;--warn:#fff7ed;--bad:#fee2e2;--ok:#ecfdf5;
+      --radius:16px;--shadow:0 10px 28px rgba(15,23,42,.08);
+    }
+    *{box-sizing:border-box}
+    body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;background:var(--bg);color:var(--ink)}
+    header{position:sticky;top:0;z-index:20;background:rgba(246,247,249,.92);backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
+    .wrap{max-width:1180px;margin:0 auto;padding:14px}
+    .top{display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap}
+    h1{font-size:22px;margin:0}.sub{color:var(--muted);font-size:13px;margin-top:3px}
+    .actions{display:flex;gap:8px;flex-wrap:wrap}
+    button,.btn{border:0;border-radius:12px;padding:10px 13px;background:#e2e8f0;color:#0f172a;font-weight:700;cursor:pointer}
+    button.primary{background:var(--brand);color:#fff}
+    button.ghost{background:#fff;border:1px solid var(--line)}
+    button.danger{background:var(--bad);color:#7f1d1d}
+    main{max-width:1180px;margin:0 auto;padding:14px}
+    .card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);padding:16px;margin:14px 0}
+    .grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+    label{display:block;font-size:12px;color:var(--muted);font-weight:700;margin:0 0 5px}
+    input,select,textarea{width:100%;border:1px solid var(--line);border-radius:10px;padding:10px 11px;font-size:15px;background:#fff;color:var(--ink)}
+    input[type=number]{text-align:right}
+    textarea{min-height:80px;resize:vertical}
+    h2{font-size:18px;margin:0 0 12px}.note{font-size:13px;color:var(--muted);line-height:1.45}
+    .tabs{display:flex;overflow:auto;gap:8px;padding:8px 0}.tab{white-space:nowrap}.tab.active{background:var(--brand);color:#fff}
+    .panel{display:none}.panel.active{display:block}
+    .tablewrap{overflow:auto;border:1px solid var(--line);border-radius:14px}
+    table{border-collapse:separate;border-spacing:0;min-width:1100px;width:100%;font-size:13px}
+    th,td{border-bottom:1px solid var(--line);border-right:1px solid var(--line);padding:7px;background:#fff;vertical-align:middle}
+    th{position:sticky;top:0;background:#f1f5f9;z-index:5;text-align:center;font-size:12px}
+    td:first-child,th:first-child{position:sticky;left:0;z-index:6;background:#fff;min-width:285px}
+    th:first-child{background:#f1f5f9;z-index:8}
+    .group{background:var(--brand2)!important;font-weight:800}
+    .readonly{background:#f8fafc;font-weight:800;text-align:right}
+    .small{font-size:12px;color:var(--muted)}
+    .people{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+    .person{border:1px solid var(--line);border-radius:14px;padding:12px;background:#fff}
+    canvas.sig{width:100%;height:150px;border:1px dashed #94a3b8;border-radius:12px;touch-action:none;background:#fff}
+    .assetgrid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+    .asset{display:grid;grid-template-columns:1.2fr .8fr .8fr;gap:8px;align-items:end;border:1px solid var(--line);border-radius:14px;padding:10px}
+    .photos{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px;margin-top:12px}
+    .photo{border:1px solid var(--line);border-radius:12px;overflow:hidden;background:#fff}
+    .photo img{width:100%;height:120px;object-fit:cover;display:block}.photo div{padding:8px;font-size:12px;color:var(--muted)}
+    .kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}.kpi{background:#f8fafc;border:1px solid var(--line);border-radius:14px;padding:12px}.kpi b{font-size:24px;display:block}
+    .locked-banner{display:none;margin-top:10px;padding:10px 12px;border-radius:12px;background:#ecfdf5;border:1px solid #bbf7d0;color:#065f46;font-weight:800}
+    body.submitted-locked .locked-banner{display:block}
+    .dashgrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-top:12px}
+    .dashcard{background:#fff;border:1px solid var(--line);border-radius:14px;padding:12px}
+    .bar{height:12px;background:#e2e8f0;border-radius:999px;overflow:hidden;margin-top:6px}
+    .bar span{display:block;height:100%;background:var(--brand);width:0%}
+    .linksbox{white-space:pre-wrap;font-size:13px;color:var(--muted);line-height:1.5}
+    @media (max-width:800px){.grid,.people,.assetgrid,.kpis{grid-template-columns:1fr}.wrap,main{padding:10px}.card{padding:12px}h1{font-size:19px}.actions button{flex:1}td:first-child,th:first-child{min-width:220px}table{font-size:12px;min-width:1000px}}
+    @media print{header,.actions,.tabs,.no-print{display:none!important}body{background:#fff}.card{box-shadow:none;break-inside:avoid}main{max-width:none}.panel{display:block!important}input,textarea,select{border:0;padding:0}.tablewrap{overflow:visible}table{min-width:0;font-size:9px}canvas.sig{height:90px}}
+  </style>
+</head>
+<body>
+<header>
+  <div class="wrap top">
+    <div>
+      <h1>Инвентаризация по складове</h1>
+      <div class="sub">HTML форма за таблет/телефон с локално запазване, снимки, подписи, Google Sheets/Drive изпращане и експорт</div>
+    </div>
+    <div class="actions">
+      <button class="ghost" id="saveBtn">Запази</button>
+      <button class="ghost" id="loadBtn">Зареди</button>
+      <button class="ghost" id="jsonBtn">Експорт JSON</button>
+      <button class="primary" id="submitBtn">Изпрати към Google</button>
+      <button class="primary" onclick="window.print()">Печат / PDF</button>
+      <button class="danger" id="clearBtn">Изчисти</button>
+    </div>
+  </div>
+</header>
+
+<main>
+  <section class="card">
+    <h2>Данни за инвентаризацията</h2>
+    <div class="grid">
+      <div><label>Номер на инвентаризация</label><input name="inventory_id" readonly></div>
+      <div><label>Депо / склад</label><input name="depot" placeholder="напр. Склад София"></div>
+      <div><label>Дата</label><input type="date" name="date"></div>
+      <div><label>Час</label><input type="time" name="time"></div>
+      <div><label>Статус</label><select name="status"><option>Чернова</option><option>Завършена</option><option>За проверка</option></select></div>
+      <div><label>Email за известие</label><input name="notify_email" type="email" placeholder="например manager@v-gas.bg"></div>
+      <div style="grid-column:span 2"><label>Google Apps Script Web App URL</label><input name="apps_script_url" placeholder="Поставете URL от Deploy -> Web app"></div>
+    </div>
+    <p class="note">Данните се пазят локално в браузъра и могат да се изпратят към Google Apps Script. При изпращане се създава 1 ред в Google Sheets, снимките и подписите се качват в отделна Drive подпапка, изпраща се email и се генерира PDF отчет.</p>
+    <div class="locked-banner" id="lockedBanner">🔒 Инвентаризацията е изпратена и заключена. Може да използвате само експорт/печат.</div>
+    <div class="note linksbox" id="submittedLinks"></div>
+  </section>
+
+  <div class="tabs no-print">
+    <button class="tab active" data-tab="inventory">Бутилки</button>
+    <button class="tab" data-tab="assets">Стелажи / други / фолио</button>
+    <button class="tab" data-tab="photos">Снимки</button>
+    <button class="tab" data-tab="people">Участници и подписи</button>
+    <button class="tab" data-tab="summary">Обобщение</button>
+    <button class="tab" data-tab="dashboard">Dashboard</button>
+  </div>
+
+  <section class="card panel active" id="inventory">
+    <h2>Бутилки</h2>
+    <div class="tablewrap">
+      <table id="invTable">
+        <thead>
+          <tr>
+            <th rowspan="2">Описание</th><th rowspan="2">Състояние</th>
+            <th colspan="7">10 кг / малки бутилки</th><th colspan="7">FLT</th><th colspan="4">20 кг</th><th rowspan="2">Обща наличност</th>
+          </tr>
+          <tr>
+            <th>10 кг</th><th>9 кг пропан</th><th>10 кг пропан</th><th>сини</th><th>дефектни</th><th>БРАК</th><th>Общо</th>
+            <th>10 кг FLT</th><th>10 кг FLT пропан</th><th>12 кг FLT</th><th>15 кг FLT</th><th>дефектни</th><th>БРАК</th><th>Общо</th>
+            <th>20 кг микс</th><th>20 кг пропан</th><th>дефектни</th><th>Общо</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="card panel" id="assets">
+    <h2>Стелажи, други активи, фолио и вентили</h2>
+    <h3>Стелажи</h3><div class="assetgrid" id="racks"></div>
+    <h3>Други</h3><div class="assetgrid" id="otherAssets"></div>
+    <h3>Фолио</h3><div class="assetgrid" id="foil"></div>
+    <h3>Вентили</h3><div class="assetgrid" id="valves"></div>
+  </section>
+
+  <section class="card panel" id="photos">
+    <h2>Снимки</h2>
+    <div class="grid">
+      <div><label>Категория</label><select id="photoCategory"><option>Общ изглед</option><option>Бутилки</option><option>Стелажи</option><option>Дефекти</option><option>Брак</option><option>Други</option></select></div>
+      <div><label>Прикачи / снимай</label><input type="file" id="photoInput" accept="image/*" capture="environment" multiple></div>
+      <div style="grid-column:span 2"><label>Бележка към снимките</label><input id="photoNote" placeholder="напр. ред, зона, проблем"></div>
+    </div>
+    <div class="photos" id="photoPreview"></div>
+  </section>
+
+  <section class="card panel" id="people">
+    <h2>Присъствали на инвентаризацията</h2>
+    <div class="people" id="peopleBox"></div>
+  </section>
+
+  <section class="card panel" id="summary">
+    <h2>Обобщение</h2>
+    <div class="kpis">
+      <div class="kpi"><span class="small">Общо бутилки</span><b id="sumAll">0</b></div>
+      <div class="kpi"><span class="small">10 кг / малки</span><b id="sumSmall">0</b></div>
+      <div class="kpi"><span class="small">FLT</span><b id="sumFlt">0</b></div>
+      <div class="kpi"><span class="small">20 кг</span><b id="sum20">0</b></div>
+    </div>
+    <div style="margin-top:12px"><label>Забележки</label><textarea name="notes" placeholder="Отклонения, липси, дефекти, действия за последваща проверка..."></textarea></div>
+  </section>
+
+  <section class="card panel" id="dashboard">
+    <h2>Dashboard</h2>
+    <p class="note">Този dashboard се изчислява локално от текущо попълнената инвентаризация. След изпращане, линковете към Drive/PDF се показват тук.</p>
+    <div class="kpis">
+      <div class="kpi"><span class="small">Общо бутилки</span><b id="dashAll">0</b></div>
+      <div class="kpi"><span class="small">Дефектни</span><b id="dashDefective">0</b></div>
+      <div class="kpi"><span class="small">БРАК</span><b id="dashScrap">0</b></div>
+      <div class="kpi"><span class="small">Снимки</span><b id="dashPhotos">0</b></div>
+    </div>
+    <div class="dashgrid">
+      <div class="dashcard"><b>10 кг / малки</b><div class="bar"><span id="barSmall"></span></div><div class="small" id="dashSmallText">0</div></div>
+      <div class="dashcard"><b>FLT</b><div class="bar"><span id="barFlt"></span></div><div class="small" id="dashFltText">0</div></div>
+      <div class="dashcard"><b>20 кг</b><div class="bar"><span id="bar20"></span></div><div class="small" id="dash20Text">0</div></div>
+    </div>
+    <div style="margin-top:14px">
+      <h3>Линкове след изпращане</h3>
+      <div class="linksbox" id="dashLinks">Още няма изпращане.</div>
+    </div>
+  </section>
+
+</main>
+
+<script>
+const desc=[
+ "Физическа наличност на депото към датата - вечерта",
+ "Бутилки на път от ГПС към депото - изпратени следобед и непристигнали",
+ "Бутилки на път от клиенти към депото - малки коли",
+ "Бутилки на отговорно пазене в клиенти",
+ "Бутилки на път от депото към ГПС"
+];
+const states=["пълни","празни"];
+const cols=["c10","p9","p10","blue","defSmall","scrapSmall","totalSmall","flt10","fltp10","flt12","flt15","defFlt","scrapFlt","totalFlt","mix20","p20","def20","total20","totalAll"];
+const sumGroups={totalSmall:["c10","p9","p10","blue","defSmall","scrapSmall"],totalFlt:["flt10","fltp10","flt12","flt15","defFlt","scrapFlt"],total20:["mix20","p20","def20"],totalAll:["totalSmall","totalFlt","total20"]};
+const tbody=document.querySelector("#invTable tbody");
+desc.forEach((d,i)=>states.forEach((s,j)=>{
+ const tr=document.createElement("tr");
+ tr.innerHTML=`<td>${j===0?d:""}</td><td>${s}</td>`+cols.map(c=>sumGroups[c]?`<td class="readonly" data-sum="${c}">0</td>`:`<td><input type="number" min="0" inputmode="numeric" data-key="${i}_${s}_${c}" value=""></td>`).join("");
+ tbody.appendChild(tr);
+}));
+function n(v){return Number(v||0)||0}
+function recalc(){
+ document.querySelectorAll("#invTable tbody tr").forEach(tr=>{
+   const values={}; tr.querySelectorAll("input[data-key]").forEach(inp=>{values[inp.dataset.key.split("_").pop()]=n(inp.value)});
+   ["totalSmall","totalFlt","total20"].forEach(k=>{values[k]=sumGroups[k].reduce((a,c)=>a+n(values[c]),0);tr.querySelector(`[data-sum="${k}"]`).textContent=values[k]});
+   values.totalAll=sumGroups.totalAll.reduce((a,c)=>a+n(values[c]),0);tr.querySelector('[data-sum="totalAll"]').textContent=values.totalAll;
+ });
+ const all=[...document.querySelectorAll('[data-sum="totalAll"]')].reduce((a,e)=>a+n(e.textContent),0);
+ const sm=[...document.querySelectorAll('[data-sum="totalSmall"]')].reduce((a,e)=>a+n(e.textContent),0);
+ const fl=[...document.querySelectorAll('[data-sum="totalFlt"]')].reduce((a,e)=>a+n(e.textContent),0);
+ const tw=[...document.querySelectorAll('[data-sum="total20"]')].reduce((a,e)=>a+n(e.textContent),0);
+ sumAll.textContent=all; sumSmall.textContent=sm; sumFlt.textContent=fl; sum20.textContent=tw;
+ updateDashboard();
+}
+document.addEventListener("input",e=>{if(e.target.matches("#invTable input"))recalc()});
+function assetBox(parent, items, fields=["бр"]){
+ const el=document.getElementById(parent);
+ items.forEach(item=>{
+   const div=document.createElement("div"); div.className="asset";
+   div.innerHTML=`<div><label>Вид</label><input value="${item}" data-asset="${parent}_${item}_type"></div>`+
+   fields.map(f=>`<div><label>${f}</label><input type="number" min="0" inputmode="numeric" data-asset="${parent}_${item}_${f}"></div>`).join("");
+   el.appendChild(div);
+ });
+}
+assetBox("racks",["6","12","20","24","композитни 6","композитни 12","24 брак"],["нови","за ремонт"]);
+assetBox("otherAssets",["Отоплители","Глави","Тела","Котлони","Пълнители"],["бр"]);
+assetBox("foil",["10 кг","20 кг","FLT"],["бр"]);
+assetBox("valves",["нови","за ремонт"],["бр"]);
+const roles=["Представител на ВИ-ГАЗ - централен офис","Представител на ВИ-ГАЗ - централен офис","Представител на депото","Представител на депото"];
+roles.forEach((r,i)=>{
+ const div=document.createElement("div"); div.className="person";
+ div.innerHTML=`<label>Роля</label><input name="role_${i}" value="${r}"><label>Име</label><input name="person_${i}" placeholder="Име и фамилия"><label>Подпис</label><canvas class="sig" width="700" height="240" data-sig="${i}"></canvas><button type="button" class="ghost clearSig">Изчисти подписа</button>`;
+ peopleBox.appendChild(div);
+});
+document.querySelectorAll(".sig").forEach(c=>{
+ let drawing=false,ctx=c.getContext("2d");ctx.lineWidth=3;ctx.lineCap="round";
+ const pos=e=>{const r=c.getBoundingClientRect(),t=e.touches?e.touches[0]:e;return{x:(t.clientX-r.left)*c.width/r.width,y:(t.clientY-r.top)*c.height/r.height}};
+ const start=e=>{drawing=true;const p=pos(e);ctx.beginPath();ctx.moveTo(p.x,p.y);e.preventDefault()};
+ const move=e=>{if(!drawing)return;const p=pos(e);ctx.lineTo(p.x,p.y);ctx.stroke();e.preventDefault()};
+ c.addEventListener("mousedown",start);c.addEventListener("touchstart",start,{passive:false});
+ c.addEventListener("mousemove",move);c.addEventListener("touchmove",move,{passive:false});
+ ["mouseup","mouseleave","touchend"].forEach(ev=>c.addEventListener(ev,()=>drawing=false));
+});
+document.addEventListener("click",e=>{
+ if(e.target.matches(".clearSig")){const c=e.target.parentElement.querySelector("canvas"),ctx=c.getContext("2d");ctx.clearRect(0,0,c.width,c.height)}
+ if(e.target.matches(".tab")){document.querySelectorAll(".tab,.panel").forEach(x=>x.classList.remove("active"));e.target.classList.add("active");document.getElementById(e.target.dataset.tab).classList.add("active")}
+});
+const photos=[];
+async function imageToDataUrl(file, maxSide=1600, quality=.82){
+  const raw=await new Promise(res=>{const r=new FileReader();r.onload=()=>res(r.result);r.readAsDataURL(file)});
+  const img=await new Promise((res,rej)=>{const i=new Image();i.onload=()=>res(i);i.onerror=rej;i.src=raw});
+  let w=img.width,h=img.height;
+  const scale=Math.min(1,maxSide/Math.max(w,h)); w=Math.round(w*scale); h=Math.round(h*scale);
+  const c=document.createElement("canvas"); c.width=w; c.height=h;
+  c.getContext("2d").drawImage(img,0,0,w,h);
+  return c.toDataURL("image/jpeg",quality);
+}
+photoInput.addEventListener("change",async e=>{
+ for(const f of e.target.files){
+   const data=await imageToDataUrl(f);
+   photos.push({name:f.name.replace(/\.[^.]+$/,"")+".jpg",category:photoCategory.value,note:photoNote.value,data,mimeType:"image/jpeg",originalSize:f.size,ts:new Date().toISOString()});
+ }
+ renderPhotos();
+});
+function renderPhotos(){photoPreview.innerHTML=photos.map((p,i)=>`<div class="photo"><img src="${p.data}"><div><b>${p.category}</b><br>${p.note||""}<br><button type="button" onclick="photos.splice(${i},1);renderPhotos()">Премахни</button></div></div>`).join("");updateDashboard()}
+function makeInventoryId(){
+  const d=new Date(), pad=x=>String(x).padStart(2,"0");
+  return `INV-${d.getFullYear()}${pad(d.getMonth()+1)}${pad(d.getDate())}-${pad(d.getHours())}${pad(d.getMinutes())}${pad(d.getSeconds())}`;
+}
+function ensureInventoryId(){
+  const el=document.querySelector('[name=inventory_id]');
+  if(el && !el.value) el.value=makeInventoryId();
+}
+function collect(){
+ ensureInventoryId();
+ const invId=document.querySelector('[name=inventory_id]').value;
+ const data={inventoryId:invId, driveFolderName:invId, meta:{},inventory:[],assets:{},people:[],photos,signatures:[],notes:document.querySelector('[name=notes]').value};
+ document.querySelectorAll("[name]").forEach(i=>data.meta[i.name]=i.value);
+ document.querySelectorAll("#invTable tbody tr").forEach(tr=>{
+   const row={description:tr.children[0].textContent, state:tr.children[1].textContent};
+   tr.querySelectorAll("input[data-key]").forEach(inp=>row[inp.dataset.key.split("_").pop()]=n(inp.value));
+   tr.querySelectorAll("[data-sum]").forEach(td=>row[td.dataset.sum]=n(td.textContent));
+   data.inventory.push(row);
+ });
+ document.querySelectorAll("[data-asset]").forEach(inp=>data.assets[inp.dataset.asset]=inp.value);
+ document.querySelectorAll(".person").forEach((p,i)=>{
+   const person={role:p.querySelector(`[name=role_${i}]`).value,name:p.querySelector(`[name=person_${i}]`).value,signature:p.querySelector("canvas").toDataURL("image/png")};
+   data.people.push(person);
+   data.signatures.push({name:person.name||`signature_${i+1}`,role:person.role,mimeType:"image/png",data:person.signature,filename:`${invId}_signature_${i+1}.png`});
+ });
+ return data;
+}
+
+function updateDashboard(){
+ const all=n(sumAll?.textContent), sm=n(sumSmall?.textContent), fl=n(sumFlt?.textContent), tw=n(sum20?.textContent);
+ const defective=[...document.querySelectorAll('#invTable input[data-key$="_defSmall"],#invTable input[data-key$="_defFlt"],#invTable input[data-key$="_def20"]')].reduce((a,e)=>a+n(e.value),0);
+ const scrap=[...document.querySelectorAll('#invTable input[data-key$="_scrapSmall"],#invTable input[data-key$="_scrapFlt"]')].reduce((a,e)=>a+n(e.value),0);
+ if(window.dashAll){dashAll.textContent=all;dashDefective.textContent=defective;dashScrap.textContent=scrap;dashPhotos.textContent=photos.length}
+ const pct=v=>all?Math.round(v/all*100):0;
+ if(window.barSmall){barSmall.style.width=pct(sm)+'%';barFlt.style.width=pct(fl)+'%';bar20.style.width=pct(tw)+'%'}
+ if(window.dashSmallText){dashSmallText.textContent=`${sm} (${pct(sm)}%)`;dashFltText.textContent=`${fl} (${pct(fl)}%)`;dash20Text.textContent=`${tw} (${pct(tw)}%)`}
+}
+function setSubmittedLinks(result, payload){
+ const lines=[
+  `Inventory ID: ${payload.inventoryId}`,
+  result.folderUrl ? `Drive папка: ${result.folderUrl}` : '',
+  result.pdfUrl ? `PDF отчет: ${result.pdfUrl}` : '',
+  result.sheetRow ? `Ред в Google Sheets: ${result.sheetRow}` : ''
+ ].filter(Boolean).join('\n');
+ if(window.submittedLinks) submittedLinks.textContent=lines;
+ if(window.dashLinks) dashLinks.textContent=lines || 'Записано успешно.';
+}
+function lockFormAfterSubmit(){
+ document.querySelectorAll('input, select, textarea').forEach(el=>{
+   if(el.name==='apps_script_url') return;
+   el.disabled=true;
+ });
+ ['submitBtn','saveBtn','loadBtn','clearBtn'].forEach(id=>{const el=document.getElementById(id); if(el) el.disabled=true;});
+ document.body.classList.add('submitted-locked');
+}
+
+async function submitToGoogle(){
+ const url=(document.querySelector('[name=apps_script_url]').value||'').trim();
+ if(!url){alert('Поставете Google Apps Script Web App URL.');return;}
+ const payload=collect();
+ submitBtn.disabled=true; submitBtn.textContent='Изпращане...';
+ try{
+   const res=await fetch(url,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(payload)});
+   const result=await res.json();
+   if(!result.ok) throw new Error(result.error||'Неуспешно изпращане');
+   document.querySelector('[name=status]').value='Завършена';
+   localStorage.setItem('vgas_inventory_form_last_submitted',JSON.stringify({inventoryId:payload.inventoryId,submittedAt:new Date().toISOString(),sheetRow:result.row||'',folderUrl:result.folderUrl||''}));
+   setSubmittedLinks(result, payload);
+   alert('Записано успешно.\nDrive папка: '+(result.folderUrl||payload.driveFolderName)+(result.pdfUrl?'\nPDF отчет: '+result.pdfUrl:''));
+   lockFormAfterSubmit();
+ }catch(err){alert('Грешка при изпращане: '+err.message); submitBtn.disabled=false; submitBtn.textContent='Изпрати към Google'}
+}
+function restore(data){
+ if(!data)return;
+ Object.entries(data.meta||{}).forEach(([k,v])=>{const el=document.querySelector(`[name="${k}"]`);if(el)el.value=v});
+ let inputs=[...document.querySelectorAll("#invTable input[data-key]")], vals=[];
+ (data.inventory||[]).forEach(r=>cols.forEach(c=>{if(!sumGroups[c]) vals.push(r[c]||"")}));
+ inputs.forEach((inp,i)=>inp.value=vals[i]||"");
+ Object.entries(data.assets||{}).forEach(([k,v])=>{const el=document.querySelector(`[data-asset="${CSS.escape(k)}"]`);if(el)el.value=v});
+ (data.people||[]).forEach((p,i)=>{let n=document.querySelector(`[name=person_${i}]`);if(n)n.value=p.name||"";let r=document.querySelector(`[name=role_${i}]`);if(r)r.value=p.role||r.value;if(p.signature){let c=document.querySelector(`[data-sig="${i}"]`),img=new Image();img.onload=()=>c.getContext("2d").drawImage(img,0,0,c.width,c.height);img.src=p.signature}});
+ if(data.notes)document.querySelector('[name=notes]').value=data.notes;
+ photos.splice(0,photos.length,...(data.photos||[]));renderPhotos();recalc();
+}
+saveBtn.onclick=()=>{localStorage.setItem("vgas_inventory_form",JSON.stringify(collect()));alert("Запазено локално на устройството.")};
+loadBtn.onclick=()=>restore(JSON.parse(localStorage.getItem("vgas_inventory_form")||"null"));
+clearBtn.onclick=()=>{if(confirm("Сигурни ли сте, че искате изчистване на формата?")){localStorage.removeItem("vgas_inventory_form");location.reload()}};
+jsonBtn.onclick=()=>{const data=collect(),blob=new Blob([JSON.stringify(data,null,2)],{type:"application/json"}),a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=`${data.inventoryId}.json`;a.click()};
+submitBtn.onclick=submitToGoogle;
+document.querySelector('[name=date]').valueAsDate=new Date();
+document.querySelector('[name=time]').value=new Date().toTimeString().slice(0,5);
+ensureInventoryId();
+recalc();
+updateDashboard();
+</script>
+</body>
+</html>
