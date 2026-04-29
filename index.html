@@ -21,6 +21,7 @@
     button.primary{background:var(--brand);color:#fff}
     button.ghost{background:#fff;border:1px solid var(--line)}
     button.danger{background:var(--bad);color:#7f1d1d}
+    button:disabled{opacity:.55;cursor:not-allowed}
     main{max-width:1180px;margin:0 auto;padding:14px}
     .card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);padding:16px;margin:14px 0}
     .grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
@@ -37,7 +38,6 @@
     th{position:sticky;top:0;background:#f1f5f9;z-index:5;text-align:center;font-size:12px}
     td:first-child,th:first-child{position:sticky;left:0;z-index:6;background:#fff;min-width:285px}
     th:first-child{background:#f1f5f9;z-index:8}
-    .group{background:var(--brand2)!important;font-weight:800}
     .readonly{background:#f8fafc;font-weight:800;text-align:right}
     .small{font-size:12px;color:var(--muted)}
     .people{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
@@ -56,7 +56,10 @@
     .bar{height:12px;background:#e2e8f0;border-radius:999px;overflow:hidden;margin-top:6px}
     .bar span{display:block;height:100%;background:var(--brand);width:0%}
     .linksbox{white-space:pre-wrap;font-size:13px;color:var(--muted);line-height:1.5}
-    @media (max-width:800px){.grid,.people,.assetgrid,.kpis{grid-template-columns:1fr}.wrap,main{padding:10px}.card{padding:12px}h1{font-size:19px}.actions button{flex:1}td:first-child,th:first-child{min-width:220px}table{font-size:12px;min-width:1000px}}
+    .statusline{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:10px;font-size:13px;color:var(--muted)}
+    .pill{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);border-radius:999px;padding:6px 10px;background:#fff;font-weight:800;color:#334155}
+    .pill.ok{background:var(--ok);color:#065f46;border-color:#bbf7d0}.pill.bad{background:var(--bad);color:#7f1d1d;border-color:#fecaca}.pill.warn{background:var(--warn);color:#9a3412;border-color:#fed7aa}
+    @media (max-width:800px){.grid,.people,.assetgrid,.kpis,.dashgrid{grid-template-columns:1fr}.wrap,main{padding:10px}.card{padding:12px}h1{font-size:19px}.actions button{flex:1}td:first-child,th:first-child{min-width:220px}table{font-size:12px;min-width:1000px}}
     @media print{header,.actions,.tabs,.no-print{display:none!important}body{background:#fff}.card{box-shadow:none;break-inside:avoid}main{max-width:none}.panel{display:block!important}input,textarea,select{border:0;padding:0}.tablewrap{overflow:visible}table{min-width:0;font-size:9px}canvas.sig{height:90px}}
   </style>
 </head>
@@ -65,12 +68,13 @@
   <div class="wrap top">
     <div>
       <h1>Инвентаризация по складове</h1>
-      <div class="sub">HTML форма за таблет/телефон с локално запазване, снимки, подписи, Google Sheets/Drive изпращане и експорт</div>
+      <div class="sub">V-GAS форма с потребители, GPS, offline retry, Looker Studio структура и умен номер INV-SOF-0001</div>
     </div>
     <div class="actions">
       <button class="ghost" id="saveBtn">Запази</button>
       <button class="ghost" id="loadBtn">Зареди</button>
       <button class="ghost" id="jsonBtn">Експорт JSON</button>
+      <button class="ghost" id="retryBtn">Retry queue</button>
       <button class="primary" id="submitBtn">Изпрати към Google</button>
       <button class="primary" onclick="window.print()">Печат / PDF</button>
       <button class="danger" id="clearBtn">Изчисти</button>
@@ -83,14 +87,30 @@
     <h2>Данни за инвентаризацията</h2>
     <div class="grid">
       <div><label>Номер на инвентаризация</label><input name="inventory_id" readonly></div>
+      <div><label>Код на склад</label><input name="warehouse_code" placeholder="SOF" value="SOF" maxlength="8"></div>
       <div><label>Депо / склад</label><input name="depot" placeholder="напр. Склад София"></div>
       <div><label>Дата</label><input type="date" name="date"></div>
       <div><label>Час</label><input type="time" name="time"></div>
-      <div><label>Статус</label><select name="status"><option>Чернова</option><option>Завършена</option><option>За проверка</option></select></div>
+      <div><label>Статус</label><select name="status"><option>Чернова</option><option>Завършена</option><option>За проверка</option><option>Изчаква изпращане</option></select></div>
       <div><label>Email за известие</label><input name="notify_email" type="email" placeholder="например manager@v-gas.bg"></div>
-      <div style="grid-column:span 2"><label>Google Apps Script Web App URL</label><input name="apps_script_url" placeholder="Поставете URL от Deploy -> Web app"></div>
+      <div><label>Последен номер за склада</label><input name="warehouse_sequence" readonly></div>
+      <div><label>Потребител - име</label><input name="submitted_by_name" placeholder="Кой подава данните"></div>
+      <div><label>Потребител - email</label><input name="submitted_by_email" type="email" placeholder="user@v-gas.bg"></div>
+      <div><label>Потребител - роля</label><select name="submitted_by_role"><option>Склад</option><option>Централен офис</option><option>Одитор</option><option>Мениджър</option></select></div>
+      <div><label>Устройство / оператор</label><input name="device_label" placeholder="таблет, телефон, смяна..."></div>
+      <div><label>GPS ширина</label><input name="gps_lat" readonly></div>
+      <div><label>GPS дължина</label><input name="gps_lng" readonly></div>
+      <div><label>GPS точност, метри</label><input name="gps_accuracy" readonly></div>
+      <div><label>GPS време</label><input name="gps_timestamp" readonly></div>
+      <div style="grid-column:span 4"><label>Google Apps Script Web App URL</label><input name="apps_script_url" placeholder="Поставете URL от Deploy -> Web app"></div>
     </div>
-    <p class="note">Данните се пазят локално в браузъра и могат да се изпратят към Google Apps Script. При изпращане се създава 1 ред в Google Sheets, снимките и подписите се качват в отделна Drive подпапка, изпраща се email и се генерира PDF отчет.</p>
+    <div class="statusline no-print">
+      <span class="pill" id="onlinePill">Проверка на връзка...</span>
+      <span class="pill" id="queuePill">Опашка: 0</span>
+      <button class="ghost" id="gpsBtn" type="button">Вземи GPS локация</button>
+      <button class="ghost" id="newIdBtn" type="button">Нов номер</button>
+    </div>
+    <p class="note">При липса на интернет или грешка при изпращане, заявката се записва в offline queue и се изпраща автоматично при възстановена връзка. Данните са подготвени и като dashboard rows за Looker Studio.</p>
     <div class="locked-banner" id="lockedBanner">🔒 Инвентаризацията е изпратена и заключена. Може да използвате само експорт/печат.</div>
     <div class="note linksbox" id="submittedLinks"></div>
   </section>
@@ -102,6 +122,7 @@
     <button class="tab" data-tab="people">Участници и подписи</button>
     <button class="tab" data-tab="summary">Обобщение</button>
     <button class="tab" data-tab="dashboard">Dashboard</button>
+    <button class="tab" data-tab="looker">Looker Studio</button>
   </div>
 
   <section class="card panel active" id="inventory">
@@ -160,7 +181,7 @@
 
   <section class="card panel" id="dashboard">
     <h2>Dashboard</h2>
-    <p class="note">Този dashboard се изчислява локално от текущо попълнената инвентаризация. След изпращане, линковете към Drive/PDF се показват тук.</p>
+    <p class="note">Локален dashboard от текущо попълнената инвентаризация. Истинският Looker Studio dashboard трябва да се върже към Google Sheets табовете, които Apps Script записва: Inventory_Master, Inventory_Rows, Assets_Rows, Photos_Rows, Users_Log.</p>
     <div class="kpis">
       <div class="kpi"><span class="small">Общо бутилки</span><b id="dashAll">0</b></div>
       <div class="kpi"><span class="small">Дефектни</span><b id="dashDefective">0</b></div>
@@ -178,6 +199,18 @@
     </div>
   </section>
 
+  <section class="card panel" id="looker">
+    <h2>Looker Studio структура</h2>
+    <p class="note">Тези редове се изпращат в payload.dashboardRows и са удобни за отделни Google Sheets табове. В Looker Studio се свързваш към Google Sheets и правиш графики по дата, склад, потребител, категория и състояние.</p>
+    <div class="grid">
+      <div><label>Looker Studio report URL</label><input name="looker_report_url" placeholder="линк към dashboard"></div>
+      <div><label>Google Sheet ID / име</label><input name="dashboard_sheet_ref" placeholder="Inventory Dashboard Sheet"></div>
+      <div><label>Измерение склад</label><input readonly value="warehouse_code / depot"></div>
+      <div><label>Измерение потребител</label><input readonly value="submitted_by_email"></div>
+    </div>
+    <div style="margin-top:12px"><label>Preview dashboard rows</label><textarea id="lookerPreview" readonly></textarea></div>
+  </section>
+
 </main>
 
 <script>
@@ -190,14 +223,54 @@ const desc=[
 ];
 const states=["пълни","празни"];
 const cols=["c10","p9","p10","blue","defSmall","scrapSmall","totalSmall","flt10","fltp10","flt12","flt15","defFlt","scrapFlt","totalFlt","mix20","p20","def20","total20","totalAll"];
+const colLabels={c10:"10 кг",p9:"9 кг пропан",p10:"10 кг пропан",blue:"сини",defSmall:"дефектни малки",scrapSmall:"БРАК малки",flt10:"10 кг FLT",fltp10:"10 кг FLT пропан",flt12:"12 кг FLT",flt15:"15 кг FLT",defFlt:"дефектни FLT",scrapFlt:"БРАК FLT",mix20:"20 кг микс",p20:"20 кг пропан",def20:"дефектни 20 кг"};
 const sumGroups={totalSmall:["c10","p9","p10","blue","defSmall","scrapSmall"],totalFlt:["flt10","fltp10","flt12","flt15","defFlt","scrapFlt"],total20:["mix20","p20","def20"],totalAll:["totalSmall","totalFlt","total20"]};
+const STORAGE_KEY="vgas_inventory_form";
+const QUEUE_KEY="vgas_inventory_retry_queue";
+const SEQ_PREFIX="vgas_inventory_sequence_";
 const tbody=document.querySelector("#invTable tbody");
+
 desc.forEach((d,i)=>states.forEach((s,j)=>{
  const tr=document.createElement("tr");
  tr.innerHTML=`<td>${j===0?d:""}</td><td>${s}</td>`+cols.map(c=>sumGroups[c]?`<td class="readonly" data-sum="${c}">0</td>`:`<td><input type="number" min="0" inputmode="numeric" data-key="${i}_${s}_${c}" value=""></td>`).join("");
  tbody.appendChild(tr);
 }));
+
 function n(v){return Number(v||0)||0}
+function pad(x,len=4){return String(x).padStart(len,"0")}
+function cleanWarehouseCode(v){return String(v||"SOF").trim().toUpperCase().replace(/[^A-Z0-9]/g,"").slice(0,8)||"SOF"}
+function seqKey(code){return SEQ_PREFIX+cleanWarehouseCode(code)}
+function getCurrentSequence(code){return n(localStorage.getItem(seqKey(code)))}
+function setCurrentSequence(code,seq){localStorage.setItem(seqKey(code),String(n(seq)))}
+function makeSmartInventoryId(code,seq){return `INV-${cleanWarehouseCode(code)}-${pad(seq,4)}`}
+function reserveNextInventoryId(force=false){
+  const code=cleanWarehouseCode(document.querySelector('[name=warehouse_code]').value);
+  const idEl=document.querySelector('[name=inventory_id]');
+  if(idEl.value && !force) return idEl.value;
+  const next=getCurrentSequence(code)+1;
+  idEl.value=makeSmartInventoryId(code,next);
+  document.querySelector('[name=warehouse_sequence]').value=next;
+  return idEl.value;
+}
+function commitInventorySequence(inventoryId){
+  const m=String(inventoryId||"").match(/^INV-([A-Z0-9]+)-(\d+)$/);
+  if(!m)return;
+  const code=m[1], seq=n(m[2]);
+  if(seq>getCurrentSequence(code)) setCurrentSequence(code,seq);
+}
+function getQueue(){try{return JSON.parse(localStorage.getItem(QUEUE_KEY)||"[]")}catch{return []}}
+function setQueue(q){localStorage.setItem(QUEUE_KEY,JSON.stringify(q));updateConnectionStatus()}
+function addToQueue(payload,url,error){
+  const q=getQueue();
+  q.push({id:payload.inventoryId,url,payload,createdAt:new Date().toISOString(),attempts:0,lastError:error||""});
+  setQueue(q);
+}
+function updateConnectionStatus(){
+  const online=navigator.onLine;
+  if(window.onlinePill){onlinePill.textContent=online?"Online":"Offline";onlinePill.className="pill "+(online?"ok":"bad")}
+  if(window.queuePill){const c=getQueue().length;queuePill.textContent=`Опашка: ${c}`;queuePill.className="pill "+(c?"warn":"ok")}
+}
+
 function recalc(){
  document.querySelectorAll("#invTable tbody tr").forEach(tr=>{
    const values={}; tr.querySelectorAll("input[data-key]").forEach(inp=>{values[inp.dataset.key.split("_").pop()]=n(inp.value)});
@@ -211,7 +284,12 @@ function recalc(){
  sumAll.textContent=all; sumSmall.textContent=sm; sumFlt.textContent=fl; sum20.textContent=tw;
  updateDashboard();
 }
-document.addEventListener("input",e=>{if(e.target.matches("#invTable input"))recalc()});
+document.addEventListener("input",e=>{
+ if(e.target.matches("#invTable input"))recalc();
+ if(e.target.matches('[name=warehouse_code]'))reserveNextInventoryId(true);
+ if(e.target.matches('[name], #invTable input, [data-asset]')) updateLookerPreview();
+});
+
 function assetBox(parent, items, fields=["бр"]){
  const el=document.getElementById(parent);
  items.forEach(item=>{
@@ -225,6 +303,7 @@ assetBox("racks",["6","12","20","24","композитни 6","композит�
 assetBox("otherAssets",["Отоплители","Глави","Тела","Котлони","Пълнители"],["бр"]);
 assetBox("foil",["10 кг","20 кг","FLT"],["бр"]);
 assetBox("valves",["нови","за ремонт"],["бр"]);
+
 const roles=["Представител на ВИ-ГАЗ - централен офис","Представител на ВИ-ГАЗ - централен офис","Представител на депото","Представител на депото"];
 roles.forEach((r,i)=>{
  const div=document.createElement("div"); div.className="person";
@@ -244,6 +323,7 @@ document.addEventListener("click",e=>{
  if(e.target.matches(".clearSig")){const c=e.target.parentElement.querySelector("canvas"),ctx=c.getContext("2d");ctx.clearRect(0,0,c.width,c.height)}
  if(e.target.matches(".tab")){document.querySelectorAll(".tab,.panel").forEach(x=>x.classList.remove("active"));e.target.classList.add("active");document.getElementById(e.target.dataset.tab).classList.add("active")}
 });
+
 const photos=[];
 async function imageToDataUrl(file, maxSide=1600, quality=.82){
   const raw=await new Promise(res=>{const r=new FileReader();r.onload=()=>res(r.result);r.readAsDataURL(file)});
@@ -261,20 +341,48 @@ photoInput.addEventListener("change",async e=>{
  }
  renderPhotos();
 });
-function renderPhotos(){photoPreview.innerHTML=photos.map((p,i)=>`<div class="photo"><img src="${p.data}"><div><b>${p.category}</b><br>${p.note||""}<br><button type="button" onclick="photos.splice(${i},1);renderPhotos()">Премахни</button></div></div>`).join("");updateDashboard()}
-function makeInventoryId(){
-  const d=new Date(), pad=x=>String(x).padStart(2,"0");
-  return `INV-${d.getFullYear()}${pad(d.getMonth()+1)}${pad(d.getDate())}-${pad(d.getHours())}${pad(d.getMinutes())}${pad(d.getSeconds())}`;
+function renderPhotos(){photoPreview.innerHTML=photos.map((p,i)=>`<div class="photo"><img src="${p.data}"><div><b>${p.category}</b><br>${p.note||""}<br><button type="button" onclick="photos.splice(${i},1);renderPhotos()">Премахни</button></div></div>`).join("");updateDashboard();updateLookerPreview()}
+
+function collectDashboardRows(base, inventory){
+ const rows=[];
+ inventory.forEach(row=>{
+   Object.keys(colLabels).forEach(k=>{
+     const qty=n(row[k]);
+     if(!qty)return;
+     let category="Други";
+     if(["c10","p9","p10","blue","defSmall","scrapSmall"].includes(k)) category="10 кг / малки";
+     if(["flt10","fltp10","flt12","flt15","defFlt","scrapFlt"].includes(k)) category="FLT";
+     if(["mix20","p20","def20"].includes(k)) category="20 кг";
+     rows.push({...base, source_table:"Inventory_Rows", description:row.description, state:row.state, category, item_code:k, item_name:colLabels[k], quantity:qty});
+   });
+ });
+ return rows;
 }
-function ensureInventoryId(){
-  const el=document.querySelector('[name=inventory_id]');
-  if(el && !el.value) el.value=makeInventoryId();
+function collectAssetRows(base, assets){
+ return Object.entries(assets).filter(([k,v])=>v!=="" && !k.endsWith("_type")).map(([k,v])=>({...base, source_table:"Assets_Rows", asset_key:k, quantity:n(v)}));
+}
+function collectPhotoRows(base, photosArr){
+ return photosArr.map((p,i)=>({...base, source_table:"Photos_Rows", photo_index:i+1, category:p.category, note:p.note, filename:p.name, timestamp:p.ts}));
 }
 function collect(){
- ensureInventoryId();
- const invId=document.querySelector('[name=inventory_id]').value;
- const data={inventoryId:invId, driveFolderName:invId, meta:{},inventory:[],assets:{},people:[],photos,signatures:[],notes:document.querySelector('[name=notes]').value};
- document.querySelectorAll("[name]").forEach(i=>data.meta[i.name]=i.value);
+ const invId=reserveNextInventoryId();
+ const meta={}; document.querySelectorAll("[name]").forEach(i=>meta[i.name]=i.value);
+ const base={
+   inventory_id:invId,
+   date:meta.date,
+   time:meta.time,
+   warehouse_code:cleanWarehouseCode(meta.warehouse_code),
+   depot:meta.depot,
+   status:meta.status,
+   submitted_by_name:meta.submitted_by_name,
+   submitted_by_email:meta.submitted_by_email,
+   submitted_by_role:meta.submitted_by_role,
+   gps_lat:meta.gps_lat,
+   gps_lng:meta.gps_lng,
+   gps_accuracy:meta.gps_accuracy,
+   gps_timestamp:meta.gps_timestamp
+ };
+ const data={inventoryId:invId, driveFolderName:invId, meta, inventory:[],assets:{},people:[],photos,signatures:[],notes:document.querySelector('[name=notes]').value, dashboardRows:[], userLog:{...base, source_table:"Users_Log", user_agent:navigator.userAgent, collected_at:new Date().toISOString()}};
  document.querySelectorAll("#invTable tbody tr").forEach(tr=>{
    const row={description:tr.children[0].textContent, state:tr.children[1].textContent};
    tr.querySelectorAll("input[data-key]").forEach(inp=>row[inp.dataset.key.split("_").pop()]=n(inp.value));
@@ -287,6 +395,7 @@ function collect(){
    data.people.push(person);
    data.signatures.push({name:person.name||`signature_${i+1}`,role:person.role,mimeType:"image/png",data:person.signature,filename:`${invId}_signature_${i+1}.png`});
  });
+ data.dashboardRows=[...collectDashboardRows(base,data.inventory),...collectAssetRows(base,data.assets),...collectPhotoRows(base,photos),data.userLog];
  return data;
 }
 
@@ -298,41 +407,81 @@ function updateDashboard(){
  const pct=v=>all?Math.round(v/all*100):0;
  if(window.barSmall){barSmall.style.width=pct(sm)+'%';barFlt.style.width=pct(fl)+'%';bar20.style.width=pct(tw)+'%'}
  if(window.dashSmallText){dashSmallText.textContent=`${sm} (${pct(sm)}%)`;dashFltText.textContent=`${fl} (${pct(fl)}%)`;dash20Text.textContent=`${tw} (${pct(tw)}%)`}
+ updateLookerPreview();
+}
+function updateLookerPreview(){
+ if(!window.lookerPreview)return;
+ try{
+   const data=collect();
+   lookerPreview.value=JSON.stringify(data.dashboardRows.slice(0,20),null,2)+(data.dashboardRows.length>20?`\n... още ${data.dashboardRows.length-20} реда`:"");
+ }catch(e){}
 }
 function setSubmittedLinks(result, payload){
  const lines=[
   `Inventory ID: ${payload.inventoryId}`,
   result.folderUrl ? `Drive папка: ${result.folderUrl}` : '',
   result.pdfUrl ? `PDF отчет: ${result.pdfUrl}` : '',
-  result.sheetRow ? `Ред в Google Sheets: ${result.sheetRow}` : ''
+  result.sheetRow ? `Ред в Google Sheets: ${result.sheetRow}` : '',
+  payload.meta?.looker_report_url ? `Looker Studio: ${payload.meta.looker_report_url}` : ''
  ].filter(Boolean).join('\n');
  if(window.submittedLinks) submittedLinks.textContent=lines;
  if(window.dashLinks) dashLinks.textContent=lines || 'Записано успешно.';
 }
 function lockFormAfterSubmit(){
- document.querySelectorAll('input, select, textarea').forEach(el=>{
-   if(el.name==='apps_script_url') return;
-   el.disabled=true;
- });
- ['submitBtn','saveBtn','loadBtn','clearBtn'].forEach(id=>{const el=document.getElementById(id); if(el) el.disabled=true;});
+ document.querySelectorAll('input, select, textarea').forEach(el=>{if(el.name==='apps_script_url'||el.name==='looker_report_url') return; el.disabled=true;});
+ ['submitBtn','saveBtn','loadBtn','clearBtn','retryBtn','gpsBtn','newIdBtn'].forEach(id=>{const el=document.getElementById(id); if(el) el.disabled=true;});
  document.body.classList.add('submitted-locked');
 }
-
+async function sendPayload(url,payload){
+ const res=await fetch(url,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(payload)});
+ const result=await res.json();
+ if(!result.ok) throw new Error(result.error||'Неуспешно изпращане');
+ return result;
+}
+async function processQueue(){
+ if(!navigator.onLine)return;
+ let q=getQueue();
+ if(!q.length)return;
+ const remaining=[];
+ for(const item of q){
+   try{
+     const result=await sendPayload(item.url,item.payload);
+     commitInventorySequence(item.payload.inventoryId);
+     localStorage.setItem('vgas_inventory_form_last_submitted',JSON.stringify({inventoryId:item.payload.inventoryId,submittedAt:new Date().toISOString(),sheetRow:result.row||'',folderUrl:result.folderUrl||'',pdfUrl:result.pdfUrl||''}));
+   }catch(err){
+     remaining.push({...item,attempts:n(item.attempts)+1,lastError:err.message,lastAttemptAt:new Date().toISOString()});
+   }
+ }
+ setQueue(remaining);
+ if(q.length && !remaining.length) alert('Offline queue е изпратена успешно.');
+}
 async function submitToGoogle(){
  const url=(document.querySelector('[name=apps_script_url]').value||'').trim();
  if(!url){alert('Поставете Google Apps Script Web App URL.');return;}
  const payload=collect();
  submitBtn.disabled=true; submitBtn.textContent='Изпращане...';
+ if(!navigator.onLine){
+   document.querySelector('[name=status]').value='Изчаква изпращане';
+   addToQueue(payload,url,'offline');
+   localStorage.setItem(STORAGE_KEY,JSON.stringify(payload));
+   alert('Няма интернет. Инвентаризацията е записана в offline queue и ще се изпрати автоматично.');
+   submitBtn.disabled=false; submitBtn.textContent='Изпрати към Google';
+   return;
+ }
  try{
-   const res=await fetch(url,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(payload)});
-   const result=await res.json();
-   if(!result.ok) throw new Error(result.error||'Неуспешно изпращане');
+   const result=await sendPayload(url,payload);
    document.querySelector('[name=status]').value='Завършена';
-   localStorage.setItem('vgas_inventory_form_last_submitted',JSON.stringify({inventoryId:payload.inventoryId,submittedAt:new Date().toISOString(),sheetRow:result.row||'',folderUrl:result.folderUrl||''}));
+   commitInventorySequence(payload.inventoryId);
+   localStorage.setItem('vgas_inventory_form_last_submitted',JSON.stringify({inventoryId:payload.inventoryId,submittedAt:new Date().toISOString(),sheetRow:result.row||'',folderUrl:result.folderUrl||'',pdfUrl:result.pdfUrl||''}));
    setSubmittedLinks(result, payload);
    alert('Записано успешно.\nDrive папка: '+(result.folderUrl||payload.driveFolderName)+(result.pdfUrl?'\nPDF отчет: '+result.pdfUrl:''));
    lockFormAfterSubmit();
- }catch(err){alert('Грешка при изпращане: '+err.message); submitBtn.disabled=false; submitBtn.textContent='Изпрати към Google'}
+ }catch(err){
+   document.querySelector('[name=status]').value='Изчаква изпращане';
+   addToQueue(payload,url,err.message);
+   alert('Грешка при изпращане. Записано е в offline retry queue: '+err.message);
+   submitBtn.disabled=false; submitBtn.textContent='Изпрати към Google';
+ }
 }
 function restore(data){
  if(!data)return;
@@ -343,18 +492,41 @@ function restore(data){
  Object.entries(data.assets||{}).forEach(([k,v])=>{const el=document.querySelector(`[data-asset="${CSS.escape(k)}"]`);if(el)el.value=v});
  (data.people||[]).forEach((p,i)=>{let n=document.querySelector(`[name=person_${i}]`);if(n)n.value=p.name||"";let r=document.querySelector(`[name=role_${i}]`);if(r)r.value=p.role||r.value;if(p.signature){let c=document.querySelector(`[data-sig="${i}"]`),img=new Image();img.onload=()=>c.getContext("2d").drawImage(img,0,0,c.width,c.height);img.src=p.signature}});
  if(data.notes)document.querySelector('[name=notes]').value=data.notes;
- photos.splice(0,photos.length,...(data.photos||[]));renderPhotos();recalc();
+ photos.splice(0,photos.length,...(data.photos||[]));renderPhotos();recalc();updateConnectionStatus();
 }
-saveBtn.onclick=()=>{localStorage.setItem("vgas_inventory_form",JSON.stringify(collect()));alert("Запазено локално на устройството.")};
-loadBtn.onclick=()=>restore(JSON.parse(localStorage.getItem("vgas_inventory_form")||"null"));
-clearBtn.onclick=()=>{if(confirm("Сигурни ли сте, че искате изчистване на формата?")){localStorage.removeItem("vgas_inventory_form");location.reload()}};
+function getGps(){
+ if(!navigator.geolocation){alert('Това устройство/браузър не поддържа GPS.');return;}
+ gpsBtn.disabled=true; gpsBtn.textContent='GPS...';
+ navigator.geolocation.getCurrentPosition(pos=>{
+   document.querySelector('[name=gps_lat]').value=pos.coords.latitude.toFixed(6);
+   document.querySelector('[name=gps_lng]').value=pos.coords.longitude.toFixed(6);
+   document.querySelector('[name=gps_accuracy]').value=Math.round(pos.coords.accuracy);
+   document.querySelector('[name=gps_timestamp]').value=new Date(pos.timestamp).toISOString();
+   gpsBtn.disabled=false; gpsBtn.textContent='Вземи GPS локация';
+   updateLookerPreview();
+ },err=>{
+   alert('GPS грешка: '+err.message);
+   gpsBtn.disabled=false; gpsBtn.textContent='Вземи GPS локация';
+ },{enableHighAccuracy:true,timeout:15000,maximumAge:60000});
+}
+
+saveBtn.onclick=()=>{localStorage.setItem(STORAGE_KEY,JSON.stringify(collect()));alert("Запазено локално на устройството.")};
+loadBtn.onclick=()=>restore(JSON.parse(localStorage.getItem(STORAGE_KEY)||"null"));
+clearBtn.onclick=()=>{if(confirm("Сигурни ли сте, че искате изчистване на формата?")){localStorage.removeItem(STORAGE_KEY);location.reload()}};
 jsonBtn.onclick=()=>{const data=collect(),blob=new Blob([JSON.stringify(data,null,2)],{type:"application/json"}),a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=`${data.inventoryId}.json`;a.click()};
 submitBtn.onclick=submitToGoogle;
+retryBtn.onclick=processQueue;
+gpsBtn.onclick=getGps;
+newIdBtn.onclick=()=>reserveNextInventoryId(true);
+window.addEventListener('online',()=>{updateConnectionStatus();processQueue()});
+window.addEventListener('offline',updateConnectionStatus);
 document.querySelector('[name=date]').valueAsDate=new Date();
 document.querySelector('[name=time]').value=new Date().toTimeString().slice(0,5);
-ensureInventoryId();
+reserveNextInventoryId();
+updateConnectionStatus();
 recalc();
 updateDashboard();
+setInterval(processQueue,60000);
 </script>
 </body>
 </html>
