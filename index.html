@@ -88,7 +88,7 @@
       <div><label>Час</label><input type="time" name="time"></div>
       <div><label>Статус</label><select name="status"><option>Чернова</option><option>Завършена</option><option>За проверка</option></select></div>
       <div><label>Email за известие</label><input name="notify_email" type="email" placeholder="например manager@v-gas.bg"></div>
-      <div style="grid-column:span 2"><" placeholder="Поставете URL от Deploy -> Web app"></div>
+      <div style="grid-column:span 2"><label>Google Apps Script Web App URL</label><input name="apps_script_url" placeholder="Поставете URL от Deploy -> Web app"></div>
     </div>
     <p class="note">Данните се пазят локално в браузъра и могат да се изпратят към Google Apps Script. При изпращане се създава 1 ред в Google Sheets, снимките и подписите се качват в отделна Drive подпапка, изпраща се email и се генерира PDF отчет.</p>
     <div class="locked-banner" id="lockedBanner">🔒 Инвентаризацията е изпратена и заключена. Може да използвате само експорт/печат.</div>
@@ -319,8 +319,8 @@ function lockFormAfterSubmit(){
 }
 
 async function submitToGoogle(){
- const url=https://script.google.com/macros/s/AKfycbzJwu1_ujL3Ug0KplFHJkMuCv_NuNGsA5YUftInY2c-Tgx_XpWKPqId8_Q3XnwqKA5k/exec
- if(!url){alert('https://script.google.com/u/0/home/projects/1z8Jc7QzbFIJZAdpYHMynFsd84_nMAnfzXN2nqWNXBx2Ses1qgh7zc0wo/edit');return;}
+ const url=(document.querySelector('[name=apps_script_url]').value||'').trim();
+ if(!url){alert('Поставете Google Apps Script Web App URL.');return;}
  const payload=collect();
  submitBtn.disabled=true; submitBtn.textContent='Изпращане...';
  try{
