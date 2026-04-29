@@ -1,0 +1,10 @@
+{
+  "name": "V-GAS Инвентаризация",
+  "short_name": "V-GAS INV",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f6f7f9",
+  "theme_color": "#0f766e",
+  "icons": []
+}
