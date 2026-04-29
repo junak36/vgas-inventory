@@ -500,8 +500,8 @@ function restore(data){
  if(data.notes)document.querySelector('[name=notes]').value=data.notes;
  photos.splice(0,photos.length,...(data.photos||[]));renderPhotos();recalc();updateConnectionStatus();
 }
-function getGps(){
- if(!navigator.geolocation){alert('Това устройство/браузър не поддържа GPS.');return;}
+function getGps(showAlert=true){
+ if(!navigator.geolocation){if(showAlert)alert('Това устройство/браузър не поддържа GPS.');return;}
  gpsBtn.disabled=true; gpsBtn.textContent='GPS...';
  navigator.geolocation.getCurrentPosition(pos=>{
    document.querySelector('[name=gps_lat]').value=pos.coords.latitude.toFixed(6);
@@ -511,7 +511,7 @@ function getGps(){
    gpsBtn.disabled=false; gpsBtn.textContent='Вземи GPS локация';
    updateLookerPreview();
  },err=>{
-   alert('GPS грешка: '+err.message);
+   if(showAlert)alert('GPS грешка: '+err.message);
    gpsBtn.disabled=false; gpsBtn.textContent='Вземи GPS локация';
  },{enableHighAccuracy:true,timeout:15000,maximumAge:60000});
 }
@@ -522,7 +522,7 @@ clearBtn.onclick=()=>{if(confirm("Сигурни ли сте, че искате 
 jsonBtn.onclick=()=>{const data=collect(),blob=new Blob([JSON.stringify(data,null,2)],{type:"application/json"}),a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=`${data.inventoryId}.json`;a.click()};
 submitBtn.onclick=submitToGoogle;
 retryBtn.onclick=processQueue;
-gpsBtn.onclick=getGps;
+gpsBtn.onclick=()=>getGps(true);
 newIdBtn.onclick=()=>reserveNextInventoryId(true);
 window.addEventListener('online',()=>{updateConnectionStatus();processQueue()});
 window.addEventListener('offline',updateConnectionStatus);
@@ -533,6 +533,11 @@ updateConnectionStatus();
 recalc();
 updateDashboard();
 setInterval(processQueue,60000);
+setTimeout(()=>{
+  const lat=document.querySelector('[name=gps_lat]').value;
+  const lng=document.querySelector('[name=gps_lng]').value;
+  if(!lat && !lng) getGps(false);
+},1200);
 if("serviceWorker" in navigator){
   window.addEventListener("load",()=>{
     navigator.serviceWorker.register("./service-worker.js").catch(err=>console.warn("Service worker error:",err));
