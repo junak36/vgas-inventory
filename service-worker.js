@@ -1,19 +1,22 @@
-const CACHE_NAME = "vgas-inventory-v2";
+// V-GAS: пренасочване на стария адрес към новата Google бланка.
+const GOOGLE_APP_URL = 'https://script.google.com/macros/s/AKfycbybWeO3vbo1RZ228C89-geR17go7-IiInowoLwKU5GtnzwlzqE_wxLY5ZerlXqmn00T/exec';
 
-const FILES_TO_CACHE = [
-  "./",
-  "./index.html",
-  "./manifest.json"
-];
-
-self.addEventListener("install", event => {
-  event.waitUntil(
-    caches.open(CACHE_NAME).then(cache => cache.addAll(FILES_TO_CACHE))
-  );
+self.addEventListener('install', function (event) {
+  event.waitUntil(self.skipWaiting());
 });
 
-self.addEventListener("fetch", event => {
-  event.respondWith(
-    caches.match(event.request).then(cached => cached || fetch(event.request))
-  );
+self.addEventListener('activate', function (event) {
+  event.waitUntil((async function () {
+    // Това е името на кеша от предишния service-worker.js.
+    await caches.delete('vgas-inventory-v2');
+    await self.clients.claim();
+  }()));
+});
+
+self.addEventListener('fetch', function (event) {
+  // Пренасочва отварянето на бланката. Останалите заявки
+  // се обработват нормално от браузъра.
+  if (event.request.method !== 'GET' || event.request.mode !== 'navigate') return;
+  if (!event.request.url.startsWith(self.registration.scope)) return;
+  event.respondWith(Promise.resolve(Response.redirect(GOOGLE_APP_URL, 302)));
 });
